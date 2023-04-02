@@ -1,16 +1,13 @@
-/* global Response, Blob */
+/* global Response */
 
-// @ts-ignore no types
+// @ts-expect-error no types
 import toStream from 'it-to-stream'
-import concat from 'it-concat'
-// @ts-ignore no types
-import toBuffer from 'it-buffer'
-import debug from 'debug'
+import { logger } from '@libp2p/logger'
 import * as ipfsResolver from './resolver.js'
 import * as pathUtils from './utils/path.js'
 import { detectContentType } from './utils/content-type.js'
 
-const log = debug('ipfs:http:response')
+const log = logger('ipfs:http:response')
 
 // TODO: pass path and add Etag and X-Ipfs-Path + tests
 const getHeader = (status = 200, statusText = 'OK', headers = {}) => ({
@@ -71,25 +68,11 @@ export async function getResponse (ipfsNode, ipfsPath) {
   try {
     const resolvedData = await ipfsResolver.cid(ipfsNode, ipfsPath)
     const { source, contentType } = await detectContentType(ipfsPath, ipfsNode.cat(resolvedData.cid))
+    const responseStream = toStream.readable(source)
 
-    if (typeof Blob === 'undefined') {
-      const responseStream = toStream.readable(toBuffer(source))
-
-      return contentType
-        ? new Response(responseStream, getHeader(200, 'OK', { 'Content-Type': contentType }))
-        : new Response(responseStream, getHeader())
-    }
-
-    try {
-      const data = await concat(source)
-      const blob = new Blob([data.slice()])
-
-      return contentType
-        ? new Response(blob, getHeader(200, 'OK', { 'Content-Type': contentType }))
-        : new Response(blob, getHeader())
-    } catch (/** @type {any} */ err) {
-      return new Response(err.toString(), getHeader(500, 'Error fetching the file'))
-    }
+    return contentType
+      ? new Response(responseStream, getHeader(200, 'OK', { 'Content-Type': contentType }))
+      : new Response(responseStream, getHeader())
   } catch (/** @type {any} */ error) {
     log(error)
     return handleResolveError(ipfsNode, ipfsPath, error)

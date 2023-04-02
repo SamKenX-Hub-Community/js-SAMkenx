@@ -4,7 +4,7 @@ import { concat as uint8ArrayConcat } from 'uint8arrays/concat'
 import drain from 'it-drain'
 import all from 'it-all'
 import { fixtures } from '../utils/index.js'
-import { expect } from 'aegir/utils/chai.js'
+import { expect } from 'aegir/chai'
 import { getDescribe, getIt } from '../utils/mocha.js'
 import { createShardedDirectory } from '../utils/create-sharded-directory.js'
 import { randomBytes } from 'iso-random-stream'
@@ -15,7 +15,7 @@ import { randomBytes } from 'iso-random-stream'
 
 /**
  * @param {Factory} factory
- * @param {Object} options
+ * @param {object} options
  */
 export function testRead (factory, options) {
   const describe = getDescribe(options)
@@ -109,6 +109,15 @@ export function testRead (factory, options) {
     it('should read from outside of mfs', async () => {
       const { cid } = await ipfs.add(fixtures.smallFile.data)
       const testFileData = uint8ArrayConcat(await all(ipfs.files.read(`/ipfs/${cid}`)))
+      expect(testFileData).to.eql(fixtures.smallFile.data)
+    })
+
+    it('should be able to read rawLeaves files', async () => {
+      const { cid } = await ipfs.add(fixtures.smallFile.data, {
+        rawLeaves: true
+      })
+      await ipfs.files.cp(`/ipfs/${cid}`, '/raw-leaves.txt')
+      const testFileData = uint8ArrayConcat(await all(ipfs.files.read('/raw-leaves.txt')))
       expect(testFileData).to.eql(fixtures.smallFile.data)
     })
 

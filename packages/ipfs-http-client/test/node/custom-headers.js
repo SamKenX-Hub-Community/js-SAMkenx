@@ -1,7 +1,7 @@
 /* eslint-env mocha */
 
 import { isNode } from 'ipfs-utils/src/env.js'
-import { expect } from 'aegir/utils/chai.js'
+import { expect } from 'aegir/chai'
 import { fromString as uint8ArrayFromString } from 'uint8arrays/from-string'
 import { create as httpClient } from '../../src/index.js'
 import http from 'http'
@@ -19,9 +19,9 @@ function startServer (fn) {
       res.writeHead(200)
       res.write(JSON.stringify({}))
       res.end()
-      server.close()
-
-      headersResolve(req.headers)
+      server.close(() => {
+        headersResolve(req.headers)
+      })
     })
   })
 
